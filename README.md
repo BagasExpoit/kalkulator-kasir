@@ -72,49 +72,6 @@ kalkulator-kasir/
 ├── settings.gradle.kts
 └── gradle.properties
 ```
-
-## 🛠️ Build dari Source
-
-**Lewat Android Studio**
-1. Clone repo ini: `git clone https://github.com/BagasExpoit/kalkulator-kasir.git`
-2. Buka folder proyek di Android Studio.
-3. Tekan **Run ▶**.
-
-**Lewat terminal** (JDK 17 dan Gradle 8.9)
-```bash
-gradle assembleDebug
-```
-APK debug ada di `app/build/outputs/apk/debug/`.
-
-## 🚀 Build Otomatis dengan GitHub Actions
-
-Setiap push ke `main` akan membangun APK yang sudah ditandatangani. Push tag berawalan `v` akan menerbitkannya ke halaman **Releases**.
-
-```bash
-git tag v1.0
-git push origin v1.0
-```
-
-### 🔐 Secrets yang dibutuhkan
-
-Buka **Settings → Secrets and variables → Actions**, lalu tambahkan:
-
-| Secret | Isi |
-|---|---|
-| `KEYSTORE_BASE64` | Isi file keystore dalam format base64 |
-| `KEYSTORE_PASSWORD` | Password keystore |
-| `KEY_ALIAS` | Alias kunci (misalnya `kasir`) |
-| `KEY_PASSWORD` | Password kunci |
-
-Membuat keystore:
-```bash
-keytool -genkeypair -v -keystore kasir-release.jks -alias kasir \
-  -keyalg RSA -keysize 2048 -validity 10000
-base64 -w 0 kasir-release.jks   # salin hasilnya ke KEYSTORE_BASE64
-```
-
-> ⚠️ Jangan pernah meng-commit file `.jks` ke repository dan simpan cadangannya di tempat aman.
-
 ## 👨‍💻 Developer
 
 <div align="center">
