@@ -8,6 +8,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -23,6 +25,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -211,6 +215,7 @@ fun KasirTheme(dark: Boolean, content: @Composable () -> Unit) {
 fun KasirApp() {
     val systemDark = isSystemInDarkTheme()
     var dark by rememberSaveable { mutableStateOf(systemDark) }
+    var tab by rememberSaveable { mutableStateOf(0) }
 
     // Warna ikon status bar & navigation bar mengikuti tema aplikasi
     val activity = LocalContext.current as ComponentActivity
@@ -243,11 +248,11 @@ fun KasirApp() {
             Scaffold(
                 modifier = Modifier.imePadding(),
                 topBar = { KasirTopBar(dark) { dark = it } },
-                bottomBar = { if (!imeVisible) Footer() },
+                bottomBar = { if (!imeVisible) KasirBottomBar(tab) { tab = it } },
                 containerColor = MaterialTheme.colorScheme.background,
                 contentWindowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp)
             ) { padding ->
-                KasirScreen(Modifier.padding(padding))
+                KasirScreen(tab, Modifier.padding(padding))
             }
         }
     }
@@ -304,9 +309,11 @@ fun KasirTopBar(dark: Boolean, onToggle: (Boolean) -> Unit) {
 //  LAYAR UTAMA
 // ---------------------------------------------------------
 @Composable
-fun KasirScreen(modifier: Modifier = Modifier) {
+fun KasirScreen(tab: Int, modifier: Modifier = Modifier) {
     val focusManager = LocalFocusManager.current
     val context = LocalContext.current
+    val scroll = rememberScrollState()
+    LaunchedEffect(tab) { scroll.scrollTo(0) }
     val prefs = remember { context.getSharedPreferences("kasir_prefs", Context.MODE_PRIVATE) }
     val laporan = remember {
         mutableStateListOf<Transaksi>().apply {
@@ -356,11 +363,12 @@ fun KasirScreen(modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(scroll)
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
 
+        if (tab == 0) {
         // ---------- INPUT BARANG ----------
         SectionCard("Input Barang") {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -493,6 +501,9 @@ fun KasirScreen(modifier: Modifier = Modifier) {
             }
         }
 
+        }
+
+        if (tab == 1) {
         // ---------- LAPORAN ----------
         LaporanCard(
             laporan = laporan,
@@ -506,8 +517,12 @@ fun KasirScreen(modifier: Modifier = Modifier) {
             }
         )
 
+        }
+
+        if (tab == 2) {
         // ---------- DEVELOPER ----------
         DeveloperCard()
+        }
     }
 }
 
@@ -773,6 +788,7 @@ fun ResultRow(
 
 @Composable
 fun DeveloperCard() {
+    val onSurface = MaterialTheme.colorScheme.onSurface
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = CardShape,
@@ -781,12 +797,36 @@ fun DeveloperCard() {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 10.dp),
+                .padding(horizontal = 16.dp, vertical = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("Developer", fontSize = 11.sp)
-            Text("Bagas Orcarius", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.height(8.dp))
+            Box(
+                modifier = Modifier
+                    .size(64.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    "BO",
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            Spacer(Modifier.height(10.dp))
+            Text("Developer", fontSize = 11.sp, color = onSurface.copy(alpha = 0.7f))
+            Text("Bagas Orcarius", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(4.dp))
+            Text(
+                "Kalkulator Kasir dibuat dengan Kotlin dan Jetpack Compose.",
+                fontSize = 12.sp,
+                textAlign = TextAlign.Center,
+                color = onSurface.copy(alpha = 0.7f)
+            )
+            Spacer(Modifier.height(16.dp))
+            Text("Sosial Media", fontSize = 11.sp, color = onSurface.copy(alpha = 0.7f))
+            Spacer(Modifier.height(6.dp))
             Row(
                 horizontalArrangement = Arrangement.spacedBy(14.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -795,7 +835,7 @@ fun DeveloperCard() {
                     FacebookIcon(Modifier.size(30.dp))
                 }
                 SocialButton("GitHub", URL_GITHUB) {
-                    GithubIcon(Modifier.size(30.dp), MaterialTheme.colorScheme.onSurface)
+                    GithubIcon(Modifier.size(30.dp), onSurface)
                 }
                 SocialButton("Instagram", URL_INSTAGRAM) {
                     InstagramIcon(Modifier.size(30.dp))
@@ -886,15 +926,105 @@ fun InstagramIcon(modifier: Modifier = Modifier) {
 
 @Composable
 fun Footer() {
-    Surface(color = MaterialTheme.colorScheme.surfaceVariant) {
-        Text(
-            "Dibuat dengan Kotlin by Bagas Orcarius",
-            modifier = Modifier
-                .fillMaxWidth()
-                .navigationBarsPadding()
-                .padding(vertical = 8.dp),
-            textAlign = TextAlign.Center,
-            fontSize = 11.sp
-        )
+    Text(
+        "Dibuat dengan Kotlin by Bagas Orcarius",
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 8.dp),
+        textAlign = TextAlign.Center,
+        fontSize = 10.sp,
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+    )
+}
+
+// ---------------------------------------------------------
+//  NAVIGASI BAWAH: Kasir | Laporan | Developer
+// ---------------------------------------------------------
+@Composable
+fun KasirBottomBar(selected: Int, onSelect: (Int) -> Unit) {
+    Surface(
+        color = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp),
+        shadowElevation = 10.dp
+    ) {
+        Column(Modifier.navigationBarsPadding()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                NavItem("Kasir", selected == 0, { onSelect(0) }) { c ->
+                    Icon(
+                        Icons.Default.ShoppingCart,
+                        contentDescription = null,
+                        tint = c,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+                NavItem("Laporan", selected == 1, { onSelect(1) }) { c ->
+                    BarsIcon(c, Modifier.size(22.dp))
+                }
+                NavItem("Developer", selected == 2, { onSelect(2) }) { c ->
+                    Icon(
+                        Icons.Default.Person,
+                        contentDescription = null,
+                        tint = c,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+            }
+            Footer()
+        }
+    }
+}
+
+@Composable
+fun NavItem(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    icon: @Composable (Color) -> Unit
+) {
+    val primary = MaterialTheme.colorScheme.primary
+    val bg by animateColorAsState(
+        if (selected) primary.copy(alpha = 0.16f) else Color.Transparent,
+        label = "navBg"
+    )
+    val fg = if (selected) primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .background(bg)
+            .clickable(onClick = onClick)
+            .animateContentSize()
+            .padding(horizontal = 16.dp, vertical = 9.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        icon(fg)
+        if (selected) {
+            Spacer(Modifier.width(6.dp))
+            Text(
+                label,
+                color = fg,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1
+            )
+        }
+    }
+}
+
+@Composable
+fun BarsIcon(color: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier) {
+        val w = size.width
+        val bw = w * 0.2f
+        val r = CornerRadius(bw * 0.35f)
+        drawRoundRect(color, Offset(w * 0.12f, w * 0.50f), Size(bw, w * 0.38f), r)
+        drawRoundRect(color, Offset(w * 0.40f, w * 0.12f), Size(bw, w * 0.76f), r)
+        drawRoundRect(color, Offset(w * 0.68f, w * 0.34f), Size(bw, w * 0.54f), r)
     }
 }
