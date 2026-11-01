@@ -1,0 +1,6 @@
+*KasirKu 1.0.0*
+- Kasir: tambah/edit barang, harga satuan, total, uang pembeli, kembalian
+- Nama toko & nomor HP bisa diubah, tombol Simpan agar data ter-load kembali
+- Upload QRIS statis dan konversi otomatis ke QRIS dinamis sesuai total belanja
+- Tema terang/gelap dan navigasi baru
+- Halaman Pengembang (Facebook & Instagram)

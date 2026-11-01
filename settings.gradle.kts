@@ -12,6 +12,5 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-
-rootProject.name = "KalkulatorKasir"
+rootProject.name = "KasirKu"
 include(":app")

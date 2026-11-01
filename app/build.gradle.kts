@@ -1,41 +1,42 @@
 plugins {
-    id("com.android.application")
-    id("org.jetbrains.kotlin.android")
-    id("org.jetbrains.kotlin.plugin.compose")
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.compose)
 }
 
+// Diisi otomatis oleh release.yml jika secret KEY_STORE tersedia
+val hasKey = project.hasProperty("androidStoreFile")
+
 android {
-    namespace = "com.bagas.kasir"
+    namespace = "com.kasirku.app"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.bagas.kasir"
-        minSdk = 24
+        applicationId = "com.kasirku.app"
+        minSdk = 26
         targetSdk = 35
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.0.0"
     }
 
-    // Keystore dibaca dari environment variable (diisi oleh GitHub Actions)
-    val keystorePath: String? = System.getenv("KEYSTORE_PATH")
-
     signingConfigs {
-        if (keystorePath != null) {
+        if (hasKey) {
             create("release") {
-                storeFile = file(keystorePath)
-                storePassword = System.getenv("KEYSTORE_PASSWORD")
-                keyAlias = System.getenv("KEY_ALIAS")
-                keyPassword = System.getenv("KEY_PASSWORD")
+                storeFile = rootProject.file(project.property("androidStoreFile") as String)
+                storePassword = project.property("androidStorePassword") as String
+                keyAlias = project.property("androidKeyAlias") as String
+                keyPassword = project.property("androidKeyPassword") as String
             }
         }
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
-            if (keystorePath != null) {
-                signingConfig = signingConfigs.getByName("release")
-            }
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            // Tanpa keystore sendiri, APK ditandatangani debug key agar tetap bisa diinstal
+            signingConfig = if (hasKey) signingConfigs.getByName("release") else signingConfigs.getByName("debug")
         }
     }
 
@@ -43,27 +44,25 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+    kotlinOptions { jvmTarget = "17" }
 
-    kotlinOptions {
-        jvmTarget = "17"
+    // Nama file APK hasil build: kasirku.apk
+    applicationVariants.all {
+        outputs.all {
+            (this as com.android.build.gradle.internal.api.BaseVariantOutputImpl).outputFileName = "kasirku.apk"
+        }
     }
-
-    buildFeatures {
-        compose = true
-    }
+    buildFeatures { compose = true }
+    packaging { resources { excludes += "/META-INF/{AL2.0,LGPL2.1}" } }
 }
 
 dependencies {
-    val composeBom = platform("androidx.compose:compose-bom:2024.10.01")
-    implementation(composeBom)
-
-    implementation("androidx.core:core-ktx:1.13.1")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
-    implementation("androidx.activity:activity-compose:1.9.3")
-
-    implementation("androidx.compose.ui:ui")
-    implementation("androidx.compose.foundation:foundation")
-    implementation("androidx.compose.animation:animation")
-    implementation("androidx.compose.material3:material3")
-    implementation("androidx.compose.material:material-icons-core")
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.activity.compose)
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.compose.ui)
+    implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.material.icons.extended)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.zxing.core)
 }
